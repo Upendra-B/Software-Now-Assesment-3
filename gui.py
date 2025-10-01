@@ -148,3 +148,49 @@ class AIGUI(tk.Tk):
         )
         self.oop_info.insert(tk.END, oop_text)
         self.oop_info.config(state="disabled")
+        
+        
+    def load_model(self):
+        model = self.model_combo.get()
+        messagebox.showinfo("Model Loaded", f"Selected: {model}")
+
+    def browse_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Images", "*.png *.jpg *.jpeg")])
+        if file_path:
+            self.input_image = Image.open(file_path).convert("RGB")
+            preview = self.input_image.resize((200, 200))
+            self.displayed_image = ImageTk.PhotoImage(preview)
+            self.img_label.config(image=self.displayed_image)
+
+    def generate(self):
+        prompt = self.input_text.get("1.0", tk.END).strip()
+        if not prompt:
+            messagebox.showwarning("Input Error", "Please enter text!")
+            return
+        try:
+            if self.model_combo.get() == "Image-to-Image" and self.input_image:
+                result = self.model_handler.run_model(input_image=self.input_image, prompt=prompt)
+            else:
+                result = self.model_handler.run_model(prompt=prompt)
+
+            self.output_image = result["image"]
+            self.output_label.config(text=result["message"])
+
+            preview = self.output_image.resize((200, 200))
+            self.displayed_image = ImageTk.PhotoImage(preview)
+            self.img_label.config(image=self.displayed_image)
+
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def clear(self):
+        self.input_text.delete("1.0", tk.END)
+        self.output_label.config(text="Output will appear here")
+        self.img_label.config(image="")
+        self.input_image = None
+        self.output_image = None
+
+
+if __name__ == "__main__":
+    app = AIGUI()
+    app.mainloop()
