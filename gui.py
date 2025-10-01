@@ -119,3 +119,32 @@ class AIGUI(tk.Tk):
         # Image preview
         self.img_label = ttk.Label(output_frame)
         self.img_label.grid(row=2, column=0, pady=10)
+
+    # ---------------------- Bottom Section ----------------------
+    def create_info_and_notes_section(self):
+        bottom_frame = ttk.Frame(self.main_frame, relief="ridge", borderwidth=2, padding="10")
+        bottom_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=(10, 0))
+        bottom_frame.columnconfigure(0, weight=1)
+        bottom_frame.columnconfigure(1, weight=1)
+
+        # Model Info
+        ttk.Label(bottom_frame, text="Model Information", font=('Helvetica', 10, 'bold')).grid(row=0, column=0, sticky="w")
+        self.model_info = scrolledtext.ScrolledText(bottom_frame, wrap=tk.WORD, height=8)
+        self.model_info.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        self.model_info.config(state="disabled")
+
+        # OOP Info
+        ttk.Label(bottom_frame, text="OOP Explanation", font=('Helvetica', 10, 'bold')).grid(row=0, column=1, sticky="w")
+        self.oop_info = scrolledtext.ScrolledText(bottom_frame, wrap=tk.WORD, height=8)
+        self.oop_info.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
+
+        # Fill OOP info text (read-only)
+        oop_text = (
+            "OOP Concepts Explanation:\n"
+            "- Multiple Inheritance (Logger + BaseHandler)\n"
+            "- Encapsulation (_model is private)\n"
+            "- Method Overriding (custom log)\n"
+            "- Decorators (@log_time applied)\n"
+        )
+        self.oop_info.insert(tk.END, oop_text)
+        self.oop_info.config(state="disabled")
