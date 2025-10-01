@@ -37,3 +37,39 @@ class AIGUI(tk.Tk):
         self.create_model_selection_and_output_section()
         self.create_input_and_output_section()
         self.create_info_and_notes_section()
+
+    # ---------------------- Menu ----------------------
+    def create_menu(self):
+        menubar = tk.Menu(self)
+        self.config(menu=menubar)
+
+        # File
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Exit", command=self.quit)
+
+        # Models
+        models_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Models", menu=models_menu)
+        models_menu.add_command(label="Reload Models", command=self.reload_models)
+
+        # Help
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Help", menu=help_menu)
+        help_menu.add_command(label="About", command=lambda: messagebox.showinfo("About", "AI Image Generator GUI"))
+
+    # ---------------------- Top Section ----------------------
+    def create_model_selection_and_output_section(self):
+        top_frame = ttk.Frame(self.main_frame, relief="ridge", borderwidth=2, padding="10")
+        top_frame.grid(row=0, column=0, columnspan=2, sticky="nsew", pady=(0, 10))
+        top_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(top_frame, text="Model Selection:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.model_combo = ttk.Combobox(top_frame, values=["Text-to-Image", "Image-to-Image"])
+        self.model_combo.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        self.model_combo.set("Text-to-Image")
+
+        load_model_button = ttk.Button(top_frame, text="Load Model", command=self.load_model)
+        load_model_button.grid(row=0, column=2, padx=5, pady=5, sticky="e")
+
+    
