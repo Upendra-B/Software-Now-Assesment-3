@@ -149,46 +149,82 @@ class AIGUI(tk.Tk):
         self.oop_info.insert(tk.END, oop_text)
         self.oop_info.config(state="disabled")
         
-        
+     # ---------------------- Logic ----------------------
     def load_model(self):
-        model = self.model_combo.get()
-        messagebox.showinfo("Model Loaded", f"Selected: {model}")
+        model_name = self.model_combo.get()
+        info = f"Model Name: {model_name}\n"
+        if model_name == "Text-to-Image":
+            info += "Category: Vision\nShort Description: Generates an image from text."
+        else:
+            info += "Category: Vision\nShort Description: Edits an image based on a text prompt."
+
+        self.model_info.config(state="normal")
+        self.model_info.delete("1.0", tk.END)
+        self.model_info.insert(tk.END, info)
+        self.model_info.config(state="disabled")
+        messagebox.showinfo("Load Model", f"Selected model: {model_name}")
+
+
+    def reload_models(self):
+        self.model_handler = ModelHandler()
+        messagebox.showinfo("Reload", "Models reloaded successfully")
 
     def browse_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Images", "*.png *.jpg *.jpeg")])
+        
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Image Files", "*.png *.jpg *.jpeg")]
+        )
         if file_path:
-            self.input_image = Image.open(file_path).convert("RGB")
-            preview = self.input_image.resize((200, 200))
-            self.displayed_image = ImageTk.PhotoImage(preview)
-            self.img_label.config(image=self.displayed_image)
+            self.input_image_path = file_path
+            self.input_image_for_model = Image.open(file_path).convert("RGB")
 
-    def generate(self):
+            # Preview image
+            preview_img = self.input_image_for_model.resize((256, 256))
+            self.displayed_image = ImageTk.PhotoImage(preview_img, master=self)
+            self.img_label.config(image=self.displayed_image)
+            self.img_label.image = self.displayed_image  # prevent garbage collection
+
+    def generate_image(self):
         prompt = self.input_text.get("1.0", tk.END).strip()
         if not prompt:
-            messagebox.showwarning("Input Error", "Please enter text!")
+            messagebox.showwarning("Input Error", "Please enter a prompt!")
             return
+
         try:
-            if self.model_combo.get() == "Image-to-Image" and self.input_image:
-                result = self.model_handler.run_model(input_image=self.input_image, prompt=prompt)
+            if self.model_combo.get() == "Image-to-Image" and self.input_image_for_model:
+                result = self.model_handler.run_model(
+                    input_image=self.input_image_for_model, prompt=prompt
+                )
             else:
                 result = self.model_handler.run_model(prompt=prompt)
 
-            self.output_image = result["image"]
-            self.output_label.config(text=result["message"])
+            output_image = result["image"]
+            self.output_image = output_image
 
-            preview = self.output_image.resize((200, 200))
-            self.displayed_image = ImageTk.PhotoImage(preview)
+            # Preview output image
+            display_img = output_image.resize((256, 256))
+            self.displayed_image = ImageTk.PhotoImage(display_img, master=self)
             self.img_label.config(image=self.displayed_image)
+            self.img_label.image = self.displayed_image  # prevent garbage collection
+
+            # Show message in output display
+            self.output_display.config(state="normal")
+            self.output_display.delete("1.0", tk.END)
+            self.output_display.insert(tk.END, result["message"])
+            self.output_display.config(state="disabled")
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    def clear(self):
+
+    def clear_fields(self):
         self.input_text.delete("1.0", tk.END)
-        self.output_label.config(text="Output will appear here")
+        self.output_display.config(state="normal")
+        self.output_display.delete("1.0", tk.END)
+        self.output_display.config(state="disabled")
         self.img_label.config(image="")
-        self.input_image = None
-        self.output_image = None
+        self.input_image_for_model = None
+        self.input_image_path = None
 
 
 if __name__ == "__main__":
