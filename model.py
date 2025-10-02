@@ -1,4 +1,8 @@
-from transformers import pipeline
+import os
+from PIL import Image
+import torch
+from diffusers import StableDiffusionPipeline, StableDiffusionImg2ImgPipeline
+from torchvision import transforms
 
 # ---------------------------
 # Base Model
@@ -8,68 +12,59 @@ class BaseModel:
         raise NotImplementedError("Subclasses must implement this method")
 
 # ---------------------------
-# Sentiment Analysis Model
+# Text-to-Image (Stable Diffusion)
 # ---------------------------
-class SentimentModel(BaseModel):
-    def __init__(self):
-        # small free model from Hugging Face
-        self.pipe = pipeline("sentiment-analysis")
+class TextToImageModel(BaseModel):
+    def __init__(self, save_dir="Data"):
+        self.save_dir = save_dir
+        os.makedirs(self.save_dir, exist_ok=True)
 
-    def run(self, text: str):
-        """Analyze sentiment of text"""
-        result = self.pipe(text)
-        return {"input": text, "result": result}
+        model_id = "runwayml/stable-diffusion-v1-5"
+        self.pipe = StableDiffusionPipeline.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+        )
 
-# ---------------------------
-# Demo
-# ---------------------------
-if __name__ == "__main__":
-    s_model = SentimentModel()
-    print(s_model.run("I am very happy today!"))
+        if torch.cuda.is_available():
+            self.pipe = self.pipe.to("cuda")
 
-
-
-    from transformers import pipeline
-
-# ---------------------------
-# Base Model
-# ---------------------------
-class BaseModel:
-    def run(self, *args, **kwargs):
-        raise NotImplementedError("Subclasses must implement this method")
+    def run(self, prompt: str):
+        image = self.pipe(prompt).images[0]
+        save_path = os.path.join(self.save_dir, f"{prompt.replace(' ', '_')}.png")
+        image.save(save_path)
+        return {"message": f"Text-to-Image generated at {save_path}", "image": image, "path": save_path}
 
 # ---------------------------
-# Sentiment Analysis Model
+# Image-to-Image (Stable Diffusion)
 # ---------------------------
-class SentimentModel(BaseModel):
-    def __init__(self):
-        self.pipe = pipeline("sentiment-analysis")
+class ImageToImageModel(BaseModel):
+    def __init__(self, save_dir="Data"):
+        self.save_dir = save_dir
+        os.makedirs(self.save_dir, exist_ok=True)
 
-    def run(self, text: str):
-        result = self.pipe(text)
-        return {"input": text, "result": result}
+        model_id = "runwayml/stable-diffusion-v1-5"
+        self.pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+        )
 
-# ---------------------------
-# Text Generation Model
-# ---------------------------
-class TextGenModel(BaseModel):
-    def __init__(self):
-        # lightweight text generation model
-        self.pipe = pipeline("text-generation", model="distilgpt2")
+        if torch.cuda.is_available():
+            self.pipe = self.pipe.to("cuda")
 
-    def run(self, text: str):
-        """Generate text continuation"""
-        result = self.pipe(text, max_length=30, num_return_sequences=1)
-        return {"input": text, "result": result}
-
-# ---------------------------
-# Demo
-# ---------------------------
-if __name__ == "__main__":
-    # Sentiment analysis
-    s_model = SentimentModel()
-    print(s_model.run("I am very happy today!"))
-
-    # Text generation
-    g_model = TextGenModel()
-    print(g_model.run("Once upon a time"))
+    def _ensure_pil_image(self, input_image):
+        """Convert input to a valid PIL.Image.Image"""
+        if isinstance(input_image, Image.Image):
+            return input_image.convert("RGB")
+        elif isinstance(input_image, str):
+            return Image.open(input_image).convert("RGB")
+        elif isinstance(input_image, torch.Tensor):
+            to_pil = transforms.ToPILImage()
+            return to_pil(input_image.cpu()).convert("RGB")
+        elif hasattr(input_image, "__array__"):  # numpy array
+            to_pil = transforms.ToPILImage()
+            return to_pil(input_image).convert("RGB")
+        else:
+            raise TypeError(
+                f"Unsupported input_image type: {type(input_image)}. "
+                "Must be PIL.Image, numpy.ndarray, torch.Tensor, or file path string."
+            )
