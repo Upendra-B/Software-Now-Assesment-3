@@ -3,12 +3,13 @@ from tkinter import ttk, filedialog, scrolledtext, messagebox
 from PIL import Image, ImageTk
 from models import ModelHandler
 
+
 class AIGUI(tk.Tk):
     """
     AI GUI with modular Tkinter design + integrated ModelHandler.
     """
-    def _init_(self):
-        super()._init_()
+    def __init__(self):
+        super().__init__()
         self.title("AI Image Generator")
         self.geometry("900x700")
 
@@ -72,7 +73,6 @@ class AIGUI(tk.Tk):
         load_model_button = ttk.Button(top_frame, text="Load Model", command=self.load_model)
         load_model_button.grid(row=0, column=2, padx=5, pady=5, sticky="e")
 
-    
     # ---------------------- Middle Section ----------------------
     def create_input_and_output_section(self):
         # Input frame
@@ -148,8 +148,8 @@ class AIGUI(tk.Tk):
         )
         self.oop_info.insert(tk.END, oop_text)
         self.oop_info.config(state="disabled")
-        
-     # ---------------------- Logic ----------------------
+
+    # ---------------------- Logic ----------------------
     def load_model(self):
         model_name = self.model_combo.get()
         info = f"Model Name: {model_name}\n"
@@ -170,19 +170,31 @@ class AIGUI(tk.Tk):
         messagebox.showinfo("Reload", "Models reloaded successfully")
 
     def browse_file(self):
-        
+    # File dialog with cross-platform file type support
         file_path = filedialog.askopenfilename(
-            filetypes=[("Image Files", "*.png *.jpg *.jpeg")]
+            filetypes=[
+                ("PNG files", "*.png"),
+                ("JPEG files", "*.jpg *.jpeg"),
+                ("BMP files", "*.bmp"),
+                ("All image files", "*.png *.jpg *.jpeg *.bmp"),
+                ("All files", "*.*")
+            ]
         )
+
         if file_path:
+            # Save chosen path
             self.input_image_path = file_path
+            # Load and normalize to RGB
             self.input_image_for_model = Image.open(file_path).convert("RGB")
 
-            # Preview image
+            # Create preview image (256x256 thumbnail)
             preview_img = self.input_image_for_model.resize((256, 256))
             self.displayed_image = ImageTk.PhotoImage(preview_img, master=self)
+
+            # Update GUI with preview
             self.img_label.config(image=self.displayed_image)
-            self.img_label.image = self.displayed_image  # prevent garbage collection
+            self.img_label.image = self.displayed_image  # keep reference to prevent garbage collection
+
 
     def generate_image(self):
         prompt = self.input_text.get("1.0", tk.END).strip()

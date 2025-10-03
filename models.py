@@ -2,12 +2,13 @@ import os
 from PIL import Image
 import torch
 from diffusers import StableDiffusionPipeline, StableDiffusionImg2ImgPipeline
-import numpy as np
 from torchvision import transforms
+
 
 # ---------------------------
 # Base Model
 # ---------------------------
+
 class BaseModel:
     def run(self, *args, **kwargs):
         raise NotImplementedError("Subclasses must implement this method")
@@ -15,6 +16,7 @@ class BaseModel:
 # ---------------------------
 # Text-to-Image (Stable Diffusion)
 # ---------------------------
+
 class TextToImageModel(BaseModel):
     def __init__(self, save_dir="Data"):
         self.save_dir = save_dir
@@ -36,8 +38,9 @@ class TextToImageModel(BaseModel):
         return {"message": f"Text-to-Image generated at {save_path}", "image": image, "path": save_path}
 
 # ---------------------------
-# Image-to-Image (Stable Diffusion Img2Img)
+# Image-to-Image (Qwen Image Edit)
 # ---------------------------
+
 class ImageToImageModel(BaseModel):
     def __init__(self, save_dir="Data"):
         self.save_dir = save_dir
@@ -53,19 +56,24 @@ class ImageToImageModel(BaseModel):
             self.pipe = self.pipe.to("cuda")
 
     def _ensure_pil_image(self, input_image):
-        """Convert input to a valid PIL.Image.Image."""
+        """Convert input to a valid PIL.Image.Image"""
         if isinstance(input_image, Image.Image):
             return input_image.convert("RGB")
         elif isinstance(input_image, str):
             return Image.open(input_image).convert("RGB")
         elif isinstance(input_image, torch.Tensor):
+            
             to_pil = transforms.ToPILImage()
             return to_pil(input_image.cpu()).convert("RGB")
-        elif isinstance(input_image, np.ndarray):
+        elif hasattr(input_image, "__array__"):  # numpy array
+            
             to_pil = transforms.ToPILImage()
             return to_pil(input_image).convert("RGB")
         else:
-            raise TypeError(f"Unsupported input_image type: {type(input_image)}")
+            raise TypeError(
+                f"Unsupported input_image type: {type(input_image)}. "
+                "Must be PIL.Image, numpy.ndarray, torch.Tensor, or file path string."
+            )
 
     def run(self, input_image, prompt: str, strength: float = 0.7, guidance_scale: float = 7.5):
         input_image = self._ensure_pil_image(input_image)
@@ -79,23 +87,27 @@ class ImageToImageModel(BaseModel):
             )
 
         def save_unique_image(output_image, save_dir, base_name="output_img2img.png"):
+            """Save image and ensure unique filename like file explorer behavior."""
             name, ext = os.path.splitext(base_name)
             save_path = os.path.join(save_dir, base_name)
             counter = 2
+
             while os.path.exists(save_path):
                 save_path = os.path.join(save_dir, f"{name}({counter}){ext}")
                 counter += 1
+
             output_image.save(save_path)
             return save_path
 
+        # Use the helper function
         output_image = result.images[0]
         save_path = save_unique_image(output_image, self.save_dir)
 
         return {"message": f"Img2Img generated at {save_path}", "image": output_image, "path": save_path}
-
 # ---------------------------
 # Model Handler
 # ---------------------------
+
 class ModelHandler:
     def __init__(self):
         self.text2img = TextToImageModel()
@@ -113,4 +125,3 @@ class ModelHandler:
             return self.text2img.run(prompt=prompt)
         else:
             raise ValueError("You must provide a prompt, optionally an input_image for Img2Img.")
-
