@@ -188,7 +188,7 @@ class AIGUI(tk.Tk):
             self.input_image_for_model = Image.open(file_path).convert("RGB")
 
             # Create preview image (256x256 thumbnail)
-            preview_img = self.input_image_for_model.resize((256, 256))
+            preview_img = self.input_image_for_model.resize((512, 512))
             self.displayed_image = ImageTk.PhotoImage(preview_img, master=self)
 
             # Update GUI with preview
@@ -214,7 +214,7 @@ class AIGUI(tk.Tk):
             self.output_image = output_image
 
             # Preview output image
-            display_img = output_image.resize((256, 256))
+            display_img = output_image.resize((512, 512))
             self.displayed_image = ImageTk.PhotoImage(display_img, master=self)
             self.img_label.config(image=self.displayed_image)
             self.img_label.image = self.displayed_image  # prevent garbage collection

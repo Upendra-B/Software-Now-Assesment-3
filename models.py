@@ -75,7 +75,7 @@ class ImageToImageModel(BaseModel):
                 "Must be PIL.Image, numpy.ndarray, torch.Tensor, or file path string."
             )
 
-    def run(self, input_image, prompt: str, strength: float = 0.7, guidance_scale: float = 7.5):
+    def run(self, input_image, prompt: str, strength: float = 0.6, guidance_scale: float = 7.5):
         input_image = self._ensure_pil_image(input_image)
 
         with torch.inference_mode():
@@ -113,7 +113,7 @@ class ModelHandler:
         self.text2img = TextToImageModel()
         self.img2img = ImageToImageModel()
 
-    def run_model(self, *, prompt=None, input_image=None, strength=0.7, guidance_scale=7.5):
+    def run_model(self, *, prompt=None, input_image=None, strength=0.6, guidance_scale=7.5):
         if input_image and prompt:
             return self.img2img.run(
                 input_image=input_image,
